@@ -31,25 +31,22 @@ if (isset($_SESSION['username'])) {
 		$username = trim(filter_var($_POST['username'], FILTER_UNSAFE_RAW));
 		$username = $conn->real_escape_string($username);
 		$username = trim(strtolower($username));
-		// echo "<script>console.log('$username')</script>"; // Nota: debug esponenziale (stampa username in console)
+		
 
 		// Sanitizza la password (attenzione: non dovrebbe essere loggata o esposta)
 		$password = trim(filter_var($_POST['password'], FILTER_UNSAFE_RAW));
 		$password = $conn->real_escape_string($password);
-		// echo "<script>console.log('$password')</script>"; // ATTENZIONE: non loggare password in produzione
-
+		
 		// Query per ottenere i dati dell'utente corrispondente allo username immesso
 		$result = $conn->query("SELECT * FROM utenti WHERE username = '$username'");
 		$row = $result->fetch_object();
-		// echo "<script>console.log('$row->username')</script>";
-		// echo "<script>console.log('$row->password')</script>";
 
 		// Crittografa la password inviata dall'utente (qui viene usata sha1, considerare password_hash per maggiore sicurezza)
-		$password = sha1($password);
+		$password_hash = password_hash($password, PASSWORD_DEFAULT);
+		$password = null
 
 		// Confronto username e password: se corrispondono si fa il login
-		if ($row->username == $username and $row->password == $password)  {
-			// echo "<script>console.log('Funziona')</script>";
+		if ($row->username == $username and $row->password == $password_hash)  {
 		
 			// Controllo addizionale sul numero di righe del risultato (se 0 indica problema DB)
 			if ($result->num_rows == 0) {
