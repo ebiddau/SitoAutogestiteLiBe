@@ -34,8 +34,8 @@ if (isset($_SESSION['username'])) {
 		$row = $result->fetch_object();
 		echo "<script>console.log('$row->username')</script>";
 		echo "<script>console.log('$row->password')</script>";
-
-		if ($row->username == $username and $row->password == $password)  {
+		$password_sha = sha1($password);
+		if ($row->username == $username and $row->password == $password_sha)  {
 			echo "<script>console.log('Funziona')</script>";
 		
 
@@ -98,6 +98,17 @@ if (isset($_SESSION['username'])) {
 				}
 			}
 		}
+		else {
+			if (!isset($errore_login)) {
+				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati, ritenta.</h3>";
+				$msg .= "<br>Non hai la password o l'hai smarrita? Contatta il tuo docente di classe che chiederà per conto tuo una nuova password ai Sistemisti<br><br>";
+				$msg .= "Riesci ad accedere ai PC scolastici ma non al sito delle autogestite? Accedi ad un PC scolastico, cambia password (CTRL+ALT+DEL e appare l'opzione) e ritenta<br><br>";
+			
+				$errore_login = true;
+			} 
+			else {
+				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati.</h3>Se hai problemi di accesso, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.<br><br>";
+			}}
 	}  // fine isset post
 
 	require("actions/openSession.php");		//se l'utente ha il cookie, fa il login e lo porta alla home
