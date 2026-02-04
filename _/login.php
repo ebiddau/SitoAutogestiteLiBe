@@ -21,34 +21,40 @@ if (isset($_SESSION['username'])) {
 	} else {
 		$msg = "<div class='jumbotron text-center jumbotron-fluid'><span id='scritto'>Accesso ad area riservata</span></div><div class='page_text'>";
 	}
-
+	echo "<script>console.log('boh')</script>";
 	if (isset($_POST['invia'])) {
 		$username = trim(filter_var($_POST['username'], FILTER_SANITIZE_STRING));
 		$username = $conn->real_escape_string($username);
 		$username = trim(strtolower($username));
-
+		echo "<script>console.log('$username')</script>";
 		$password = trim(filter_var($_POST['password'], FILTER_SANITIZE_STRING));
 		$password = $conn->real_escape_string($password);
-
+		echo "<script>console.log('$password')</script>";
 		$result = $conn->query("SELECT * FROM utenti WHERE username = '$username'");
+		$row = $result->fetch_object();
+		echo "<script>console.log('$row->username')</script>";
+		echo "<script>console.log('$row->password')</script>";
 
-		$imap=imap_open("{lbmail.liceobellinzona.ch:993/imap/ssl/novalidate-cert}INBOX", $username, $password, 0, 0);
-		imap_errors();
-		imap_alerts();
+		if ($row->username == $username and $row->password == $password)  {
+			echo "<script>console.log('Funziona')</script>";
+		
 
-		if (!$imap) {
-			if (!isset($errore_login)) {
-				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati, ritenta.</h3>";
-				$msg .= "<br>Non hai la password o l'hai smarrita? Contatta il tuo docente di classe che chiederà per conto tuo una nuova password ai Sistemisti<br><br>";
-				$msg .= "Riesci ad accedere ai PC scolastici ma non al sito delle autogestite? Accedi ad un PC scolastico, cambia password (CTRL+ALT+DEL e appare l'opzione) e ritenta<br><br>";
+		// imap_errors();
+		// imap_alerts();
+
+		// if (!$imap) {
+		// 	if (!isset($errore_login)) {
+		// 		$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati, ritenta.</h3>";
+		// 		$msg .= "<br>Non hai la password o l'hai smarrita? Contatta il tuo docente di classe che chiederà per conto tuo una nuova password ai Sistemisti<br><br>";
+		// 		$msg .= "Riesci ad accedere ai PC scolastici ma non al sito delle autogestite? Accedi ad un PC scolastico, cambia password (CTRL+ALT+DEL e appare l'opzione) e ritenta<br><br>";
 
 
-				$errore_login = true;
-			} else {
-				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati.</h3>Se hai problemi di accesso, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.<br><br>";
-			}
+		// 		$errore_login = true;
+		// 	} else {
+		// 		$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati.</h3>Se hai problemi di accesso, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.<br><br>";
+		// 	}
 
-		} else {
+		// } else {
 			if ($result->num_rows == 0) {
 				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>C'è un problema con il database, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.</h3>";
 			} else {
