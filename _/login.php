@@ -1,4 +1,5 @@
 <?php
+// Controlla se l'utente è già loggato; se sì lo reindirizza alla home o alla location richiesta
 if (isset($_SESSION['username'])) {
 	if (isset($_GET['location'])) {
 		header("Location: index.php?page=" . $_GET['location']);
@@ -7,9 +8,11 @@ if (isset($_SESSION['username'])) {
 	}
 } else {
 
+	// Carica header e menu del template (visualizzazione pagina di login)
 	require("template/header.php");
 	require("template/menu.php");
 
+	// Costruisce il messaggio iniziale in base al parametro 'level' (es. admin, comm)
 	if (isset($_GET["level"])) {
 		if ($_GET["level"] == "admin") {
 			$msg = "<div class='jumbotron text-center jumbotron-fluid'><span id='scritto'>Accesso ad area moooolto riservata</span></div><div class='page_text'>Devi essere un amministratore per accedere a questa pagina<br><br>";
@@ -21,58 +24,53 @@ if (isset($_SESSION['username'])) {
 	} else {
 		$msg = "<div class='jumbotron text-center jumbotron-fluid'><span id='scritto'>Accesso ad area riservata</span></div><div class='page_text'>";
 	}
-	echo "<script>console.log('boh')</script>";
+
+	// Se è stato inviato il form di login: elabora i dati
 	if (isset($_POST['invia'])) {
-		$username = trim(filter_var($_POST['username'], FILTER_SANITIZE_STRING));
+		// Sanitizza e normalizza lo username (rimuove spazi, filtra stringhe e mette in minuscolo)
+		$username = trim(filter_var($_POST['username'], FILTER_UNSAFE_RAW));
 		$username = $conn->real_escape_string($username);
 		$username = trim(strtolower($username));
-		echo "<script>console.log('$username')</script>";
-		$password = trim(filter_var($_POST['password'], FILTER_SANITIZE_STRING));
+		// echo "<script>console.log('$username')</script>"; // Nota: debug esponenziale (stampa username in console)
+
+		// Sanitizza la password (attenzione: non dovrebbe essere loggata o esposta)
+		$password = trim(filter_var($_POST['password'], FILTER_UNSAFE_RAW));
 		$password = $conn->real_escape_string($password);
-		echo "<script>console.log('$password')</script>";
+		// echo "<script>console.log('$password')</script>"; // ATTENZIONE: non loggare password in produzione
+
+		// Query per ottenere i dati dell'utente corrispondente allo username immesso
 		$result = $conn->query("SELECT * FROM utenti WHERE username = '$username'");
 		$row = $result->fetch_object();
-		echo "<script>console.log('$row->username')</script>";
-		echo "<script>console.log('$row->password')</script>";
-		$password_sha = sha1($password);
-		if ($row->username == $username and $row->password == $password_sha)  {
-			echo "<script>console.log('Funziona')</script>";
+		// echo "<script>console.log('$row->username')</script>";
+		// echo "<script>console.log('$row->password')</script>";
+
+		// Crittografa la password inviata dall'utente (qui viene usata sha1, considerare password_hash per maggiore sicurezza)
+		$password = sha1($password);
+
+		// Confronto username e password: se corrispondono si fa il login
+		if ($row->username == $username and $row->password == $password)  {
+			// echo "<script>console.log('Funziona')</script>";
 		
-
-		// imap_errors();
-		// imap_alerts();
-
-		// if (!$imap) {
-		// 	if (!isset($errore_login)) {
-		// 		$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati, ritenta.</h3>";
-		// 		$msg .= "<br>Non hai la password o l'hai smarrita? Contatta il tuo docente di classe che chiederà per conto tuo una nuova password ai Sistemisti<br><br>";
-		// 		$msg .= "Riesci ad accedere ai PC scolastici ma non al sito delle autogestite? Accedi ad un PC scolastico, cambia password (CTRL+ALT+DEL e appare l'opzione) e ritenta<br><br>";
-
-
-		// 		$errore_login = true;
-		// 	} else {
-		// 		$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati.</h3>Se hai problemi di accesso, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.<br><br>";
-		// 	}
-
-		// } else {
+			// Controllo addizionale sul numero di righe del risultato (se 0 indica problema DB)
 			if ($result->num_rows == 0) {
 				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>C'è un problema con il database, <a href='index.php?page=contatti' target='_blank'>contatta il supporto tecnico</a>.</h3>";
 			} else {
+				// Secret usato per il MAC del cookie "ricordami" (non mostrarlo in output)
 				$secret = "jZF#3z9sZZuYxgya%6Ba87jBhN7s7YRms%tuuTJpysTV_?UTMYQyb*FwK7H8pF2qUUBM^zUT8KKkyyVdY#+WRd&FTZcwwbbCQ=Feb7SQX-5mD4s+XRf-C@YRSdcUNexb^gX==J&3Xxr%n3Mw_7w8^AVY3qq-Zn*w#LfnSyG@=s5_#!Bj^Mpa6y^Jzh$#ch";
 
 				$row = $result->fetch_object();
 
+				// Se l'utente ha chiesto di essere ricordato, genera token, lo salva nel DB e imposta cookie con HMAC
 				if ($_POST['ricordami'] == "y") {
-					$token = sha1($username) . sha1(date(DATE_ISO8601)); // generate a token
-
+					$token = sha1($username) . sha1(date(DATE_ISO8601)); // genera token
 					$resultUpdate = $conn->query("UPDATE utenti SET token='" . $token . "' WHERE username='" . $username . "'");
-
 					$cookie = $username . ':' . $token;
 					$mac = hash_hmac('sha256', $cookie, $secret);
 					$cookie .= ':' . $mac;
-					setcookie('remembermeAutogest', $cookie, time() + (86400 * 30)); // 86400 = 1 day
+					setcookie('remembermeAutogest', $cookie, time() + (86400 * 30)); // durata 30 giorni
 				}
 
+				// Imposta variabili di sessione dell'utente per tenerlo loggato
 				$_SESSION['id'] = $row->id_utente;
 				$_SESSION['nome'] = $row->nome;
 				$_SESSION['cognome'] = $row->cognome;
@@ -83,14 +81,16 @@ if (isset($_SESSION['username'])) {
 				$_SESSION['aiuto'] = $row->aiuto;
 				$_SESSION['ip'] = $_SERVER["REMOTE_ADDR"];
 
-				// Così si può decidere quando aprire le iscrizioni, modificando il valore nel database
+				// Variabili di configurazione legenda: iscrizioni, assenze, data di apertura iscrizioni
 				$_SESSION['iscrizione'] = $row->iscrizione;
 				$_SESSION['assenze'] = 1;
 				$_SESSION['apertura_iscrizione'] = "2021-03-14 12:00:00";
 
+				// Libera risorse e chiude connessioni esterne (es. IMAP)
 				mysqli_free_result($result);
 				imap_close($imap);
 
+				// Reindirizza l'utente alla pagina originaria (se specificata) o alla home
 				if (!empty($_POST['location'])) {
 					header ("Location: index.php?page=" . $_POST['location']);
 				} else {
@@ -99,6 +99,7 @@ if (isset($_SESSION['username'])) {
 			}
 		}
 		else {
+			// Gestione degli errori di login: mostra messaggio appropriato (primo tentativo o successivi)
 			if (!isset($errore_login)) {
 				$msg = "<div class='jumbotron text-center jumbotron-fluid'>Accesso ad area riservata</div><div class='page_text'><h3 style='color:red;'>Username o password sono sbagliati, ritenta.</h3>";
 				$msg .= "<br>Non hai la password o l'hai smarrita? Contatta il tuo docente di classe che chiederà per conto tuo una nuova password ai Sistemisti<br><br>";
@@ -111,12 +112,15 @@ if (isset($_SESSION['username'])) {
 			}}
 	}  // fine isset post
 
+	// Se l'utente ha il cookie 'rememberme', actions/openSession.php prova a loggarlo automaticamente
 	require("actions/openSession.php");		//se l'utente ha il cookie, fa il login e lo porta alla home
 	?>
 	<?php
+	// Stampa del messaggio costruito in precedenza (info, errori, ecc.)
 	echo $msg;
 	?>
 
+		<!-- Form di login: invia username, password e opzione 'ricordami' -->
 		<form action="login.php" method="POST" style="width: 100%; max-width: 330px; display: block; margin: 0 auto;">
 			<input type="hidden" name="location" value="<?php echo $_GET['location'];?>">
 			Effettua il login con i tuoi dati del liceo per accedere alle aree riservate.<br><br>
@@ -136,6 +140,7 @@ if (isset($_SESSION['username'])) {
 	</div>
 
 	<style> 
+			/* Stili per il box che contiene il messaggio di testo della pagina */
 			.page_text {
 				color: white;
 				margin-left: 30%;
@@ -154,6 +159,7 @@ if (isset($_SESSION['username'])) {
 		</style>
 	<?php
 
+	// Include del footer del template
 	require("template/footer.php");
 	
 } ?>
