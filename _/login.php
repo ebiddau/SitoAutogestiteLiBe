@@ -28,25 +28,24 @@ if (isset($_SESSION['username'])) {
 	// Se è stato inviato il form di login: elabora i dati
 	if (isset($_POST['invia'])) {
 		// Sanitizza e normalizza lo username (rimuove spazi, filtra stringhe e mette in minuscolo)
-		$username = trim(filter_var($_POST['username'], FILTER_UNSAFE_RAW));
-		$username = $conn->real_escape_string($username);
+		$username = htmlspecialchars(trim($_POST['username']), ENT_QUOTES, 'UTF-8');
+		$user_stmt = $conn->prepare("SELECT * FROM utenti WHERE username = ?");
 		$username = trim(strtolower($username));
+		$user_stmt->bind_param('s',$username);
+		$user_stmt->execute();
 		
 
 		// Sanitizza la password (attenzione: non dovrebbe essere loggata o esposta)
-		$password = trim(filter_var($_POST['password'], FILTER_UNSAFE_RAW));
-		$password = $conn->real_escape_string($password);
+		$passwordInserita = $_POST['password'];
 		
 		// Query per ottenere i dati dell'utente corrispondente allo username immesso
-		$result = $conn->query("SELECT * FROM utenti WHERE username = '$username'");
-		$row = $result->fetch_object();
-
+		$result = $user_stmt->get_result();
+		$user = $result->fetch_object();
+		
 		// Crittografa la password inviata dall'utente (qui viene usata sha1, considerare password_hash per maggiore sicurezza)
-		$password_hash = password_hash($password, PASSWORD_DEFAULT);
-		$password = null
-
+		$hashSalvato = $user->password;
 		// Confronto username e password: se corrispondono si fa il login
-		if ($row->username == $username and $row->password == $password_hash)  {
+		if ($user && password_verify($passwordInserita, $hashSalvato))  {
 		
 			// Controllo addizionale sul numero di righe del risultato (se 0 indica problema DB)
 			if ($result->num_rows == 0) {
@@ -54,8 +53,8 @@ if (isset($_SESSION['username'])) {
 			} else {
 				// Secret usato per il MAC del cookie "ricordami" (non mostrarlo in output)
 				$secret = "jZF#3z9sZZuYxgya%6Ba87jBhN7s7YRms%tuuTJpysTV_?UTMYQyb*FwK7H8pF2qUUBM^zUT8KKkyyVdY#+WRd&FTZcwwbbCQ=Feb7SQX-5mD4s+XRf-C@YRSdcUNexb^gX==J&3Xxr%n3Mw_7w8^AVY3qq-Zn*w#LfnSyG@=s5_#!Bj^Mpa6y^Jzh$#ch";
-
-				$row = $result->fetch_object();
+				session_regenerate_id(true);
+				$user = $result->fetch_object();
 
 				// Se l'utente ha chiesto di essere ricordato, genera token, lo salva nel DB e imposta cookie con HMAC
 				if ($_POST['ricordami'] == "y") {
@@ -68,24 +67,23 @@ if (isset($_SESSION['username'])) {
 				}
 
 				// Imposta variabili di sessione dell'utente per tenerlo loggato
-				$_SESSION['id'] = $row->id_utente;
-				$_SESSION['nome'] = $row->nome;
-				$_SESSION['cognome'] = $row->cognome;
-				$_SESSION['classe'] = $row->classe;
-				$_SESSION['username'] = $row->username;
-				$_SESSION['admin'] = $row->admin;
-				$_SESSION['comm'] = $row->comm;
-				$_SESSION['aiuto'] = $row->aiuto;
+				$_SESSION['id'] = $user->id_utente;
+				$_SESSION['nome'] = $user->nome;
+				$_SESSION['cognome'] = $user->cognome;
+				$_SESSION['classe'] = $user->classe;
+				$_SESSION['username'] = $user->username;
+				$_SESSION['admin'] = $user->admin;
+				$_SESSION['comm'] = $user->comm;
+				$_SESSION['aiuto'] = $user->aiuto;
 				$_SESSION['ip'] = $_SERVER["REMOTE_ADDR"];
 
 				// Variabili di configurazione legenda: iscrizioni, assenze, data di apertura iscrizioni
-				$_SESSION['iscrizione'] = $row->iscrizione;
+				$_SESSION['iscrizione'] = $user->iscrizione;
 				$_SESSION['assenze'] = 1;
 				$_SESSION['apertura_iscrizione'] = "2021-03-14 12:00:00";
 
 				// Libera risorse e chiude connessioni esterne (es. IMAP)
 				mysqli_free_result($result);
-				imap_close($imap);
 
 				// Reindirizza l'utente alla pagina originaria (se specificata) o alla home
 				if (!empty($_POST['location'])) {

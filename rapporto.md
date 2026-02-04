@@ -1,2 +1,4 @@
 Spiegate brevemente cosa avete fatto se lavorate senza gli altri.
 No sbatta per farlo bello, basta che si faccia capire l'idea.
+
+Cambiato nomi di alcune variabili per renderle più comprensibili, tolto alcune funzionalità ormai deprecate. Trasfromato tutto da sha1 a sha256, se si riesce ad avere certificato https è sicurezza pure sopra gli standard ( per cagate del genere). Inoltre ho messo apposto problemi per rischio SQL Injection e fatto un intera funzione che genera le password casuali, le hasha sul DB e crea un excell con tutte quante le password e gli username. Inoltre ho fatto commentare a copilot il codice del login perchè sì.
