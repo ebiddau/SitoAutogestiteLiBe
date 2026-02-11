@@ -12,7 +12,7 @@ if (!isset($_SESSION['username']) && isset($_COOKIE['remembermeAutogest'])) {
 </marquee> -->
 
 <div class='jumbotron text-center jumbotron-fluid'>
-	<span id="scritto">Autogestite 2025</span>
+	<span id="scritto">Autogestite 2026</span>
 </div>
 
 <div class="page_text">
