@@ -1,8 +1,7 @@
 <?php
-// Include the same header file that login.php uses (goes up one level from _ folder)
 require("template/header.php");
 
-// Now $conn is available, just like in login.php
+
 $stmt = $conn->query("SELECT username FROM utenti");
 $utenti = $stmt->fetch_all(MYSQLI_ASSOC);
 
@@ -22,7 +21,6 @@ function export_passwords_to_csv($passwords, $filename = 'passwords.csv') {
     }
     
     fclose($file);
-    echo "Passwords exported to $filename\n";
 }
 
 $plaintext_passwords = [];
